@@ -43,3 +43,27 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android local build settings and caches
+/android/.gradle/
+/android/.kotlin/
+/android/local.properties
+/android/key.properties
+
+# iOS generated dependencies and Flutter outputs
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/ephemeral/
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+
+# Local editor, signing, and service configuration files
+/.vscode/
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.env
+*.env.*
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
