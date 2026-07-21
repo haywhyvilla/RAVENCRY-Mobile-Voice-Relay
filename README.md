@@ -1,87 +1,85 @@
 # RAVENCRY Voice Relay
 
-RAVENCRY Voice Relay is an offline-first Flutter companion for preparing a
-fictional missing-person sighting report. It is designed for Android and iOS,
-stores reports on the device, and queues them for human review.
+> **Offline voice-sighting intake for human review.**
+>
+> A Flutter companion for preparing a fictional missing-person sighting report
+> when connectivity is weak or unavailable. Runs on **Android** and **iOS**.
 
-> If you are in immediate danger, call **112**. This demo does not contact
-> emergency services, issue alerts, or deliver reports to a server.
+**RAVENCRY Voice Relay is not an emergency dispatch service.** If someone is
+in immediate danger, call **112**. The app never claims a report was delivered,
+an alert was issued, or emergency services were contacted.
 
-## Included flow
+---
 
-1. Choose English, Hausa, Yoruba, Igbo, or Pidgin.
-2. Confirm that reports require human review.
-3. Record audio locally or use the text-only fallback.
-4. Review the supplied fictional Hausa sighting fixture.
-5. Queue the report locally and view it in the persistent offline outbox.
-6. Run the local-only demo submission stub, which returns `DEMO-VOICE-001`
-   with `queued_for_human_review`.
+## Why it exists
 
-The app makes no network request and contains no API key, backend, or
-production URL.
+Voice Relay provides a low-bandwidth path from a local sighting report to a
+human-review queue. It uses a dark, high-contrast interface, large controls,
+five Nigerian language choices, and a text-only fallback when a microphone is
+not available.
 
-## Requirements
+```mermaid
+flowchart LR
+    A[Choose language] --> B[Confirm human review]
+    B --> C{Capture method}
+    C -->|Microphone available| D[Save local audio]
+    C -->|Permission denied or unavailable| E[Write text report]
+    D --> F[Review fictional sighting]
+    E --> F
+    F --> G[Queue locally]
+    G --> H[Offline outbox]
+    H --> I[Local demo result]
+    I --> J[Queued for human review]
+```
 
-- Flutter `3.41.6` with Dart `3.11.4` or a compatible newer toolchain.
-- Android SDK and an Android emulator/device for Android runs.
-- Xcode and an iOS Simulator/device for iOS runs.
-- A JDK supported by your Android Gradle Plugin (JDK 17–21 is recommended;
-  JDK 25 is not compatible with this project's Gradle setup).
+## Experience at a glance
 
-## Run locally
+| Capability | What the app does | What it never does |
+| --- | --- | --- |
+| **Language + consent** | Supports English, Hausa, Yoruba, Igbo, and Pidgin; requires human-review acknowledgement. | Lets a user continue without consent. |
+| **Voice capture** | Requests microphone permission and saves audio locally as `.m4a`. | Uploads audio or performs cloud transcription. |
+| **Text fallback** | Keeps the report flow usable if recording is denied or unavailable. | Leaves the user at a dead end. |
+| **Fixture review** | Shows the supplied fictional Hausa transcript, English gloss, time, location, and language. | Uses real case data or claims a sighting is verified. |
+| **Offline outbox** | Persists queued reports on-device across restarts. | Sends, broadcasts, or delivers a report. |
+| **Demo submission** | Returns the deterministic local result `DEMO-VOICE-001`. | Contacts a server or emergency service. |
+
+## Quick start
+
+### Prerequisites
+
+- Flutter `3.41.6` and Dart `3.11.4`, or a compatible newer toolchain.
+- Android SDK plus an emulator/device for Android.
+- Xcode plus an iOS Simulator/device for iOS.
+- JDK **17–21** for Android builds. JDK 25 is not compatible with this
+  project's Gradle setup.
+
+### Install and run
 
 ```bash
 flutter pub get
-flutter run
-```
-
-Choose a device explicitly when more than one is connected:
-
-```bash
 flutter devices
 flutter run -d <device-id>
 ```
 
-### Android
-
-The app requests `RECORD_AUDIO` only when the user starts a local recording.
-If permission is denied or the microphone is unavailable, the text-only path
-remains available.
+### Build
 
 ```bash
+# Android
 flutter build apk --debug
-```
 
-### iOS
-
-The iOS target includes an `NSMicrophoneUsageDescription` entry. Use an
-unsigned debug build for Simulator-oriented verification, or configure signing
-in Xcode before deploying to a physical device.
-
-```bash
+# iOS: use Xcode signing before physical-device deployment
 flutter build ios --debug --no-codesign
 ```
 
-## Verify
+## Demo walkthrough
 
-```bash
-flutter analyze
-flutter test
-```
-
-The widget test covers language/consent gating, text fallback, fixture review,
-local queueing, simulated restart persistence, and the local submission stub.
-
-## Demo data and contract
-
-- Fictional fixture: `assets/fixtures/voice-relay-sighting.json`
-- JSON Schema: `docs/voice-relay-contract.schema.json`
-- Local outbox: `SharedPreferences` serializes `VoiceRelayReport` items on the
-  device.
-
-The submission adapter is intentionally replaceable. The only current adapter
-is `LocalOnlySubmissionAdapter`; it returns the fixed demo result below and
-does not change a report's queued status:
+1. Select **Hausa** and acknowledge that a human reviews reports.
+2. Start and stop a local recording, or select **Use text instead**.
+3. Enter text when using the fallback, then select **Prepare text response**.
+4. Select **Review report** to view the fictional sighting fixture.
+5. Select **Queue for human review** to store the report locally.
+6. Open the **Outbox** to confirm it remains queued after reopening the app.
+7. Select **Try sending (local demo)** to show the safe, deterministic result:
 
 ```json
 {
@@ -91,21 +89,92 @@ does not change a report's queued status:
 }
 ```
 
-## Project structure
+## Local-only design
+
+```mermaid
+flowchart TB
+    App[Flutter app] --> Audio[App documents: local audio]
+    App --> Outbox[SharedPreferences: serialized outbox]
+    App --> Fixture[Bundled fictional JSON fixture]
+    App --> Stub[LocalOnlySubmissionAdapter]
+    Stub --> Result[Fixed human-review result]
+    App -. no network .-> Network[No backend or production endpoint]
+```
+
+| Area | Implementation |
+| --- | --- |
+| Local recording | `record` writes `.m4a` files inside the app documents directory. |
+| Text-only path | Native Flutter `TextField`; used when recording is unavailable or declined. |
+| Report persistence | `shared_preferences` stores serialized `VoiceRelayReport` items locally. |
+| Demo fixture | Bundled application asset; no database, API key, or remote content is required. |
+| Submission boundary | Replaceable `VoiceRelaySubmissionAdapter`; only `LocalOnlySubmissionAdapter` is implemented. |
+
+## Privacy, safety, and permissions
+
+| Platform | Permission / storage | Behaviour |
+| --- | --- | --- |
+| Android | `RECORD_AUDIO` | Requested only when local voice capture begins. |
+| iOS | `NSMicrophoneUsageDescription` | Explains that audio is saved locally on the device. |
+| Both | App-local audio and preferences | No network request, authentication, map, push notification, or background sync. |
+
+The bundled report is fictional demonstration data. Do not add real case data,
+production URLs, secrets, API keys, credentials, or real contact numbers.
+
+## Data contract
+
+The JSON Schema is available at
+[`docs/voice-relay-contract.schema.json`](docs/voice-relay-contract.schema.json).
+It defines the serialized report fields and the local demo-result contract.
 
 ```text
-lib/main.dart                             App flow, local recording, outbox, and stub
-assets/fixtures/voice-relay-sighting.json Fictional demo sighting
-docs/voice-relay-contract.schema.json     Report and stub-result JSON Schema
+VoiceRelayReport
+├── client_submission_id
+├── known_case_id (optional)
+├── kind: sighting
+├── language: en | ha | yo | ig | pcm
+├── transcript
+├── location_label
+├── captured_at (ISO 8601)
+├── audio_local_path (optional)
+├── status: queued | sent_stub | failed
+└── consent_confirmed
+```
+
+## Verify the app
+
+```bash
+flutter analyze
+flutter test
+```
+
+The widget test covers the entire demo story: consent gating, the text fallback,
+fixture review, local queueing, simulated restart persistence, and the local
+submission stub.
+
+## Project map
+
+```text
+lib/main.dart                             Screens, local capture, outbox, and submission stub
+assets/fixtures/voice-relay-sighting.json Fictional sighting used by every demo state
+docs/voice-relay-contract.schema.json     Report and submission-result JSON Schema
 test/widget_test.dart                     End-to-end widget test
-android/                                  Android runner and microphone permission
+android/                                  Android runner and microphone declaration
 ios/                                      iOS runner and microphone usage description
 ```
 
-## Version control
+## Git hygiene
 
-Generated build output, platform caches, IDE settings, local signing files,
-and service configuration files are excluded through `.gitignore`. Commit the
-source, fixture, schema, and `pubspec.lock`; do not commit `build/`,
-`.dart_tool/`, `ios/Pods/`, Android Gradle caches, `.env` files, signing keys,
-or credentials.
+The repository ignores build output, Dart/Pub caches, Android and iOS generated
+dependencies, IDE files, service configuration, local signing material, and
+environment files. Commit the source, fixture, schema, `pubspec.yaml`, and
+`pubspec.lock`; never commit `build/`, `.dart_tool/`, `ios/Pods/`, signing keys,
+credentials, or `.env` files.
+
+## Current scope
+
+Implemented: **VR-00 through VR-05** — scaffold, safety shell, language and
+consent, local capture and fallback, fixture review, persistent outbox, and the
+local-only submission stub.
+
+Remaining delivery work: manual device QA, proof screenshots/demo clip, and
+handoff documentation.
