@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravencry.local/schemas/voice-relay-contract.schema.json",
+  "title": "RAVENCRY Voice Relay Report",
+  "description": "Local-only Voice Relay report payload. A valid report is queued for human review and is never evidence of delivery, alert issuance, or emergency-service contact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "client_submission_id",
+    "known_case_id",
+    "kind",
+    "language",
+    "transcript",
+    "location_label",
+    "captured_at",
+    "audio_local_path",
+    "status",
+    "consent_confirmed"
+  ],
+  "properties": {
+    "client_submission_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier created on the device."
+    },
+    "known_case_id": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "Optional known RAVENCRY case identifier."
+    },
+    "kind": {
+      "type": "string",
+      "const": "sighting"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["en", "ha", "yo", "ig", "pcm"]
+    },
+    "transcript": {
+      "type": "string",
+      "minLength": 1
+    },
+    "location_label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audio_local_path": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "App-local audio path when voice capture was used; null for text-only reports."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["queued", "sent_stub", "failed"]
+    },
+    "consent_confirmed": {
+      "type": "boolean"
+    }
+  },
+  "$defs": {
+    "submission_result": {
+      "title": "Voice Relay Submission Result",
+      "description": "JSON representation of the local submission adapter result. The Flutter model uses caseReference for this JSON field.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "case_reference", "message"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "queued_for_human_review"
+        },
+        "case_reference": {
+          "type": "string",
+          "const": "DEMO-VOICE-001"
+        },
+        "message": {
+          "type": "string",
+          "const": "Saved for human review. This demo has not contacted emergency services."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "client_submission_id": "demo-voice-001",
+      "known_case_id": "NR-2026-000001",
+      "kind": "sighting",
+      "language": "ha",
+      "transcript": "Na ga Fatima Bello, yarinya mai shekara bakwai, kusa da Kasuwar Sabon Gari a Kano da misalin karfe tara na safe.",
+      "location_label": "Sabon Gari Market, Kano",
+      "captured_at": "2026-07-20T08:15:00+01:00",
+      "audio_local_path": null,
+      "status": "queued",
+      "consent_confirmed": true
+    }
+  ]
+}
